@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 void main() {
   runApp(
@@ -17,6 +19,7 @@ class Movie {
   String genre;
   String year;
   bool isFavorite;
+  File? image;
 
   Movie({
     required this.id,
@@ -24,6 +27,7 @@ class Movie {
     required this.genre,
     required this.year,
     this.isFavorite = false,
+    this.image,
   });
 }
 
@@ -33,9 +37,15 @@ class MovieProvider extends ChangeNotifier {
   List<Movie> get movies => _movies;
   List<Movie> get favoriteMovies => _movies.where((m) => m.isFavorite).toList();
 
-  void addMovie(String name, String genre, String year) {
+  void addMovie(String name, String genre, String year, File? image) {
     _movies.add(
-      Movie(id: const Uuid().v4(), name: name, genre: genre, year: year),
+      Movie(
+        id: const Uuid().v4(),
+        name: name,
+        genre: genre,
+        year: year,
+        image: image,
+      ),
     );
     notifyListeners();
   }
@@ -45,12 +55,13 @@ class MovieProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void editMovie(String id, String name, String genre, String year) {
+  void editMovie(String id, String name, String genre, String year, File? image) {
     final index = _movies.indexWhere((movie) => movie.id == id);
     if (index != -1) {
       _movies[index].name = name;
       _movies[index].genre = genre;
       _movies[index].year = year;
+      _movies[index].image = image;
       notifyListeners();
     }
   }
@@ -125,6 +136,7 @@ class MovieListPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 final movie = movies[index];
                 return ListTile(
+                  leading: movie.image != null ? Image.file(movie.image!, width: 50, height: 50, fit: BoxFit.cover) : const Icon(Icons.movie),
                   title: Text(movie.name),
                   subtitle: Text('${movie.genre} - ${movie.year}'),
                   trailing: Row(
@@ -183,6 +195,7 @@ class FavoriteMoviesPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 final movie = favorites[index];
                 return ListTile(
+                  leading: movie.image != null ? Image.file(movie.image!, width: 50, height: 50, fit: BoxFit.cover) : const Icon(Icons.movie),
                   title: Text(movie.name),
                   subtitle: Text('${movie.genre} - ${movie.year}'),
                   trailing: IconButton(
@@ -210,6 +223,7 @@ class _AddMoviePageState extends State<AddMoviePage> {
   late final TextEditingController _nameController;
   late final TextEditingController _genreController;
   late final TextEditingController _yearController;
+  File? _image;
 
   @override
   void initState() {
@@ -219,6 +233,16 @@ class _AddMoviePageState extends State<AddMoviePage> {
     _yearController = TextEditingController(text: widget.movie?.year ?? '');
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
+  }
+
   void _submit() {
     if (_formKey.currentState!.validate()) {
       if (widget.movie == null) {
@@ -226,6 +250,7 @@ class _AddMoviePageState extends State<AddMoviePage> {
               _nameController.text,
               _genreController.text,
               _yearController.text,
+              _image,
             );
       } else {
         context.read<MovieProvider>().editMovie(
@@ -233,6 +258,7 @@ class _AddMoviePageState extends State<AddMoviePage> {
               _nameController.text,
               _genreController.text,
               _yearController.text,
+              _image,
             );
       }
       Navigator.pop(context);
@@ -259,6 +285,16 @@ class _AddMoviePageState extends State<AddMoviePage> {
           key: _formKey,
           child: Column(
             children: [
+              GestureDetector(
+                onTap: _pickImage,
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage: _image != null ? FileImage(_image!) : null,
+                  child: _image == null ? const Icon(Icons.camera_alt, size: 50) : null,
+                ),
+              ),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Nome do Filme'),
