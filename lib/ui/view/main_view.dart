@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projeto_flutter/ui/view/favorite_view.dart';
-import 'package:projeto_flutter/ui/view/movie_view.dart';
+import 'package:projeto_flutter/ui/view/movie_list_view.dart';
 
 class MainView extends StatelessWidget {
   const MainView({super.key});
@@ -21,7 +21,7 @@ class MainView extends StatelessWidget {
         ),
         body: const TabBarView(
           children: [
-            MovieView(),
+            MovieListPage(),
             FavoriteView(),
           ],
         ),

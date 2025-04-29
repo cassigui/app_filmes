@@ -3,11 +3,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:projeto_flutter/domain/models/movie.dart';
+import 'package:projeto_flutter/ui/viewmodels/library_movie_view_model.dart';
 import 'package:projeto_flutter/ui/viewmodels/movie_view_model.dart';
 import 'package:provider/provider.dart';
 
-class MovieView extends StatelessWidget {
-  const MovieView({super.key});
+class MovieListPage extends StatefulWidget {
+  const MovieListPage({super.key});
+
+  @override
+  State<MovieListPage> createState() => _MovieListPageState();
+}
+
+class _MovieListPageState extends State<MovieListPage> {
+  List<bool> movieInLibrary = [];
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +28,10 @@ class MovieView extends StatelessWidget {
               itemCount: movies.length,
               itemBuilder: (context, index) {
                 final movie = movies[index];
+                bool onLibrary = context
+                    .read<LibraryMovieRepositoryMemory>()
+                    .checkMovieIsInLibrary(movie.id);
+                movieInLibrary.add(onLibrary);
                 return ListTile(
                   leading: movie.image != null
                       ? Image.file(movie.image!,
@@ -30,6 +42,26 @@ class MovieView extends StatelessWidget {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      IconButton(
+                        icon: Icon(onLibrary
+                            ? Icons.bookmark
+                            : Icons.bookmark_outline),
+                        onPressed: () {
+                          if (onLibrary) {
+                            context
+                                .read<LibraryMovieRepositoryMemory>()
+                                .removeMovieFromLibrary(movie.id);
+                          } else {
+                            context
+                                .read<LibraryMovieRepositoryMemory>()
+                                .addMovieToLibrary(movie);
+                          }
+
+                          setState(() {
+                            movieInLibrary[index] = !movieInLibrary[index];
+                          });
+                        },
+                      ),
                       IconButton(
                         icon: Icon(
                           movie.isFavorite
@@ -53,6 +85,9 @@ class MovieView extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
+                          context
+                              .read<LibraryMovieRepositoryMemory>()
+                              .removeMovieFromLibrary(movie.id);
                           context.read<MovieViewModel>().removeMovie(movie.id);
                         },
                       ),
@@ -117,6 +152,13 @@ class _AddMoviePageState extends State<AddMoviePage> {
             );
       } else {
         context.read<MovieViewModel>().editMovie(
+              widget.movie!.id,
+              _nameController.text,
+              _genreController.text,
+              _yearController.text,
+              _image,
+            );
+        context.read<LibraryMovieRepositoryMemory>().updateMovieInfo(
               widget.movie!.id,
               _nameController.text,
               _genreController.text,

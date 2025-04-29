@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_flutter/ui/view/main_view.dart';
+import 'package:projeto_flutter/ui/view/home_view.dart';
 
 class AppWidget extends StatelessWidget {
   const AppWidget({super.key});
@@ -14,7 +14,7 @@ class AppWidget extends StatelessWidget {
               secondary: Colors.deepPurpleAccent,
             ),
       ),
-      home: const MainView(),
+      home: const HomeView(),
     );
   }
 }
