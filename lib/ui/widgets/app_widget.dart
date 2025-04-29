@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_flutter/pages/main_page.dart';
+import 'package:projeto_flutter/ui/view/main_view.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class AppWidget extends StatelessWidget {
+  const AppWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
               secondary: Colors.deepPurpleAccent,
             ),
       ),
-      home: const MainTabController(),
+      home: const MainView(),
     );
   }
 }

@@ -2,16 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:projeto_flutter/models/movie.dart';
-import 'package:projeto_flutter/repositories/movie_provider.dart';
+import 'package:projeto_flutter/domain/models/movie.dart';
+import 'package:projeto_flutter/ui/viewmodels/movie_view_model.dart';
 import 'package:provider/provider.dart';
 
-class MovieListPage extends StatelessWidget {
-  const MovieListPage({super.key});
+class MovieView extends StatelessWidget {
+  const MovieView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final movies = context.watch<MovieProvider>().movies;
+    final movies = context.watch<MovieViewModel>().movies;
 
     return Scaffold(
       body: movies.isEmpty
@@ -38,7 +38,7 @@ class MovieListPage extends StatelessWidget {
                           color: movie.isFavorite ? Colors.red : Colors.grey,
                         ),
                         onPressed: () => context
-                            .read<MovieProvider>()
+                            .read<MovieViewModel>()
                             .toggleFavorite(movie.id),
                       ),
                       IconButton(
@@ -53,7 +53,7 @@ class MovieListPage extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
-                          context.read<MovieProvider>().removeMovie(movie.id);
+                          context.read<MovieViewModel>().removeMovie(movie.id);
                         },
                       ),
                     ],
@@ -109,14 +109,14 @@ class _AddMoviePageState extends State<AddMoviePage> {
   void _submit() {
     if (_formKey.currentState!.validate()) {
       if (widget.movie == null) {
-        context.read<MovieProvider>().addMovie(
+        context.read<MovieViewModel>().addMovie(
               _nameController.text,
               _genreController.text,
               _yearController.text,
               _image,
             );
       } else {
-        context.read<MovieProvider>().editMovie(
+        context.read<MovieViewModel>().editMovie(
               widget.movie!.id,
               _nameController.text,
               _genreController.text,

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_flutter/repositories/movie_provider.dart';
+import 'package:projeto_flutter/ui/viewmodels/movie_view_model.dart';
 import 'package:provider/provider.dart';
 
-class FavoriteMoviesPage extends StatelessWidget {
-  const FavoriteMoviesPage({super.key});
+class FavoriteView extends StatelessWidget {
+  const FavoriteView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final favorites = context.watch<MovieProvider>().favoriteMovies;
+    final favorites = context.watch<MovieViewModel>().favoriteMovies;
 
     return Scaffold(
       body: favorites.isEmpty
@@ -26,7 +26,7 @@ class FavoriteMoviesPage extends StatelessWidget {
                   trailing: IconButton(
                     icon: const Icon(Icons.favorite, color: Colors.red),
                     onPressed: () =>
-                        context.read<MovieProvider>().toggleFavorite(movie.id),
+                        context.read<MovieViewModel>().toggleFavorite(movie.id),
                   ),
                 );
               },

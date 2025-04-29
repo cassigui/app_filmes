@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_flutter/pages/favorite_page.dart';
-import 'package:projeto_flutter/pages/movie_page.dart';
+import 'package:projeto_flutter/ui/view/favorite_view.dart';
+import 'package:projeto_flutter/ui/view/movie_view.dart';
 
-class MainTabController extends StatelessWidget {
-  const MainTabController({super.key});
+class MainView extends StatelessWidget {
+  const MainView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,8 +21,8 @@ class MainTabController extends StatelessWidget {
         ),
         body: const TabBarView(
           children: [
-            MovieListPage(),
-            FavoriteMoviesPage(),
+            MovieView(),
+            FavoriteView(),
           ],
         ),
       ),

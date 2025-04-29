@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:projeto_flutter/models/movie.dart';
+import 'package:projeto_flutter/domain/models/movie.dart';
 import 'package:uuid/uuid.dart';
 
-class MovieProvider extends ChangeNotifier {
+class MovieViewModel extends ChangeNotifier {
   final List<Movie> _movies = [];
 
   List<Movie> get movies => _movies;
