@@ -1,16 +1,35 @@
-# projeto_flutter
+# Projeto Mobile - App Filmes
 
-A new Flutter project.
+Repositório referente à entrega do projeto de Desenvolvimento Mobile utilizando Flutter.
 
-## Getting Started
+## Integrantes
 
-This project is a starting point for a Flutter application.
+- Cassiano Guilherme
 
-A few resources to get you started if this is your first Flutter project:
+&#9745; Página com lista de filmes adicionados pelo usuário e filmes marcados como favorito</br>
+&#9745; CRUD de filmes</br>
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Igor Eduardo da Silva
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+&#9745; Refatoração de TODO o código para adequação à arquitura MVVM</br>
+
+- Murilo Vozniaki Correia
+
+&#9745; Página com lista de filmes marcados como "Quero Assistir" ou "Assistido"</br>
+&#9745; Criação da NavBar para navegação entre as seções "Listas" e "Filmes"</br>
+
+
+## Instalação e uso do projeto
+
+### Ferramentas necessárias
+
+- Dart
+- Flutter SDK
+
+### Instalando dependências
+
+Realizar a instalação das dependências usando o Flutter
+
+```bash
+  flutter pub get
+```
