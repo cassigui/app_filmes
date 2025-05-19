@@ -1,0 +1,10 @@
+version: "3.7"
+
+services:
+    pocketbase:
+        image: pocketbase
+        restart: unless-stopped
+        ports:
+            - 8080:8080
+        volumes:
+            - "./pocketbase-data:/pb/pb_data"
