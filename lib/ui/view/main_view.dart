@@ -24,7 +24,7 @@ class MainView extends StatelessWidget {
           children: [
             MovieListPage(),
             FavoriteView(),
-            FavoriteView(),
+            AccountView(),
           ],
         ),
       ),
