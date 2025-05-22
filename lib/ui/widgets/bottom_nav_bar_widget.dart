@@ -9,11 +9,13 @@ class BottomNavBarWidget extends StatelessWidget {
   static const List<IconData> _icons = [
     Icons.bookmark, // Listas
     Icons.explore, // Filmes
+    Icons.account_circle, // Conta
   ];
 
   static const List<String> _labels = [
     'Listas',
     'Filmes',
+    'Conta',
   ];
 
   @override

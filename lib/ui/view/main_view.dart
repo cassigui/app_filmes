@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projeto_flutter/ui/view/account_view.dart';
 import 'package:projeto_flutter/ui/view/favorite_view.dart';
 import 'package:projeto_flutter/ui/view/movie_list_view.dart';
 
@@ -23,6 +24,7 @@ class MainView extends StatelessWidget {
           children: [
             MovieListPage(),
             FavoriteView(),
+            AccountView(),
           ],
         ),
       ),

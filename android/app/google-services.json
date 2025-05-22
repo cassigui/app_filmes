@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "570802168161",
+    "project_id": "app-filmes-f48f4",
+    "storage_bucket": "app-filmes-f48f4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:570802168161:android:132d8b1dbd84ceebf46520",
+        "android_client_info": {
+          "package_name": "com.example.projeto_flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "570802168161-udlshr9gl2eni4knj5pua2jkf2loa0rq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD99nIM2kyrgxqSu8Kt1ml8teAFuuqx0bw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "570802168161-udlshr9gl2eni4knj5pua2jkf2loa0rq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "570802168161-h9t45l0icvjudo8m6dun25og9qe0p93j.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.projetoFlutter"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_flutter/ui/view/home_view.dart';
+import 'package:projeto_flutter/ui/widgets/auth_check_widget.dart';
 
 class AppWidget extends StatelessWidget {
   const AppWidget({super.key});
@@ -14,7 +14,7 @@ class AppWidget extends StatelessWidget {
               secondary: Colors.deepPurpleAccent,
             ),
       ),
-      home: const HomeView(),
+      home: const AuthCheckWidget(),
     );
   }
 }
