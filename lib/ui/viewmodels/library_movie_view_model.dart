@@ -49,7 +49,7 @@ class LibraryMovieRepositoryMemory extends ChangeNotifier
     final index = _libraryMovies.indexWhere((lMovie) => lMovie.movie.id == id);
     if (index != -1) {
       final movie =
-          Movie(id: id, name: name, genre: genre, year: year, image: image);
+          Movie(id: id, title: name, genre: genre, year: year, image: image);
       _libraryMovies[index].movie = movie;
       notifyListeners();
     }

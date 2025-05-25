@@ -23,7 +23,7 @@ class WatchListView extends StatelessWidget {
                       ? Image.file(movie.image!,
                           width: 50, height: 50, fit: BoxFit.cover)
                       : const Icon(Icons.movie),
-                  title: Text(movie.name),
+                  title: Text(movie.title),
                   subtitle: Text('${movie.genre} - ${movie.year}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

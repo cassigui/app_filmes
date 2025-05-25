@@ -37,7 +37,7 @@ class _MovieListPageState extends State<MovieListPage> {
                       ? Image.file(movie.image!,
                           width: 50, height: 50, fit: BoxFit.cover)
                       : const Icon(Icons.movie),
-                  title: Text(movie.name),
+                  title: Text(movie.title),
                   subtitle: Text('${movie.genre} - ${movie.year}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -126,7 +126,7 @@ class _AddMoviePageState extends State<AddMoviePage> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.movie?.name ?? '');
+    _nameController = TextEditingController(text: widget.movie?.title ?? '');
     _genreController = TextEditingController(text: widget.movie?.genre ?? '');
     _yearController = TextEditingController(text: widget.movie?.year ?? '');
   }
