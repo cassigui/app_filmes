@@ -2,20 +2,32 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:projeto_flutter/data/repositories/movie_repository.dart';
+import 'package:projeto_flutter/data/services/auth_service.dart';
 import 'package:projeto_flutter/domain/models/movie.dart';
 import 'package:uuid/uuid.dart';
 
 class MovieViewModel extends ChangeNotifier {
+  late AuthService auth;
   final MovieRepository _repository = MovieRepository();
 
   List<Movie> _movies = [];
+  List<Movie> _favoriteMovies = [];
 
   List<Movie> get movies => _movies;
-  List<Movie> get favoriteMovies => _movies.where((m) => m.isFavorite).toList();
+  List<Movie> get favoriteMovies => _favoriteMovies;
+
+  MovieViewModel({required this.auth}) {
+    loadMovies();
+  }
 
   Future<void> loadMovies() async {
     _movies = await _repository.getAllMovies();
+    _favoriteMovies = await _repository.getFavoriteMovies(auth.user!.uid);
     notifyListeners();
+  }
+
+  Future<bool> checkMovieIsFavorite(String id) async {
+    return await _repository.checkMovieIsFavorite(id, auth.user!.uid);
   }
 
   Future<void> addMovie(
@@ -60,7 +72,7 @@ class MovieViewModel extends ChangeNotifier {
     //   _movies[index].isFavorite = !_movies[index].isFavorite;
     //   notifyListeners();
     // }
-    await _repository.updateFavorite(id);
+    await _repository.updateFavorite(id, auth.user!.uid);
     await loadMovies();
   }
 }
