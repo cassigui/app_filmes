@@ -2,7 +2,7 @@ import 'dart:io';
 
 class Movie {
   final String id;
-  String name;
+  String title;
   String genre;
   String year;
   bool isFavorite;
@@ -10,10 +10,30 @@ class Movie {
 
   Movie({
     required this.id,
-    required this.name,
+    required this.title,
     required this.genre,
     required this.year,
     this.isFavorite = false,
     this.image,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'titulo': title,
+      'genero': genre,
+      'ano': year,
+      'favorito': isFavorite ? 1 : 0,
+    };
+  }
+
+  factory Movie.fromMap(Map<String, dynamic> map) {
+    return Movie(
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      genre: map['genre'] ?? '',
+      year: map['year'] ?? '',
+      isFavorite: map['isFavorite'] == 1,
+    );
+  }
 }

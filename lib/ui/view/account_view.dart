@@ -7,28 +7,40 @@ class AccountView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: OutlinedButton(
-          onPressed: () => context.read<AuthService>().logout(),
-          style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.red,
-            padding: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.logout, color: Colors.red),
-              SizedBox(width: 8),
-              Text(
-                'Sair',
-                style: TextStyle(fontSize: 16),
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Expanded(child: Container()),
+            OutlinedButton(
+              onPressed: () => context.read<AuthService>().logout(),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-            ],
-          )),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.logout, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text(
+                    'Sair',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
