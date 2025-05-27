@@ -16,12 +16,17 @@ class DB {
 
   _initDatabase() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'meu_app.db');
+    final path = join(dbPath, 'app_filmes.db');
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(_userProfile);
+        }
+      },
     );
   }
 
@@ -29,6 +34,7 @@ class DB {
     await db.execute(_movies);
     await db.execute(_libraryMovie);
     await db.execute(_favoriteMovies);
+    await db.execute(_userProfile);
   }
 
   String get _movies => '''
@@ -58,4 +64,12 @@ class DB {
       FOREIGN KEY(movie_id) REFERENCES movies(id) ON DELETE CASCADE
     );
   ''';
+
+  String get _userProfile => '''
+  CREATE TABLE user_profile (
+    uid TEXT PRIMARY KEY,
+    cpf TEXT,
+    birthDate TEXT
+  );
+''';
 }
