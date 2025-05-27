@@ -18,7 +18,7 @@ class AuthService extends ChangeNotifier {
     });
   }
 
-  _getUser() {
+  getUser() {
     user = _auth.currentUser;
     notifyListeners();
   }
@@ -29,7 +29,7 @@ class AuthService extends ChangeNotifier {
         email: email,
         password: password,
       );
-      _getUser();
+      getUser();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
         throw AuthException('Usuário não encontrado');
@@ -37,8 +37,10 @@ class AuthService extends ChangeNotifier {
         throw AuthException('Senha incorreta');
       } else if (e.code == 'invalid-email') {
         throw AuthException('Email inválido');
+      } else if (e.code == 'invalid-credential') {
+        throw AuthException('Credenciais inválidas. Verifique o e-mail e a senha.');
       } else {
-        throw AuthException('Erro desconhecido');
+        throw AuthException(e.message ?? 'Erro desconhecido');
       }
     }
   }
@@ -49,7 +51,7 @@ class AuthService extends ChangeNotifier {
         email: email,
         password: password,
       );
-      _getUser();
+      getUser();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         throw AuthException('Senha muito fraca');

@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:projeto_flutter/data/repositories/library_movie_repository.dart';
 import 'package:projeto_flutter/domain/models/movie.dart';
-import 'package:projeto_flutter/ui/viewmodels/library_movie_view_model.dart';
 import 'package:projeto_flutter/ui/viewmodels/movie_view_model.dart';
 import 'package:provider/provider.dart';
 
@@ -15,11 +15,26 @@ class MovieListPage extends StatefulWidget {
 }
 
 class _MovieListPageState extends State<MovieListPage> {
-  List<bool> movieInLibrary = [];
+  Map<String, bool> movieInLibrary = {};
+  Map<String, bool> movieIsFavorite = {};
+
+  Future<void> loadMovies(List<Movie> movies) async {
+    for (var movie in movies) {
+      bool isWatched = await context.read<LibraryMovieRepository>().checkMovieIsInLibrary(movie.id);
+      bool isFavorite = await context.read<MovieViewModel>().checkMovieIsFavorite(movie.id);
+      movieInLibrary[movie.id] = isWatched;
+      movieIsFavorite[movie.id] = isFavorite;
+    }
+
+    setState(() {
+      
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final movies = context.watch<MovieViewModel>().movies;
+    loadMovies(movies);
 
     return Scaffold(
       body: movies.isEmpty
@@ -28,16 +43,14 @@ class _MovieListPageState extends State<MovieListPage> {
               itemCount: movies.length,
               itemBuilder: (context, index) {
                 final movie = movies[index];
-                bool onLibrary = context
-                    .read<LibraryMovieRepositoryMemory>()
-                    .checkMovieIsInLibrary(movie.id);
-                movieInLibrary.add(onLibrary);
+                bool onLibrary = movieInLibrary[movie.id] == null ? false : movieInLibrary[movie.id]!;
+                bool isFavorite = movieIsFavorite[movie.id] == null ? false : movieIsFavorite[movie.id]!;
                 return ListTile(
                   leading: movie.image != null
                       ? Image.file(movie.image!,
                           width: 50, height: 50, fit: BoxFit.cover)
                       : const Icon(Icons.movie),
-                  title: Text(movie.name),
+                  title: Text(movie.title),
                   subtitle: Text('${movie.genre} - ${movie.year}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -49,29 +62,34 @@ class _MovieListPageState extends State<MovieListPage> {
                         onPressed: () {
                           if (onLibrary) {
                             context
-                                .read<LibraryMovieRepositoryMemory>()
+                                .read<LibraryMovieRepository>()
                                 .removeMovieFromLibrary(movie.id);
                           } else {
                             context
-                                .read<LibraryMovieRepositoryMemory>()
+                                .read<LibraryMovieRepository>()
                                 .addMovieToLibrary(movie);
                           }
 
                           setState(() {
-                            movieInLibrary[index] = !movieInLibrary[index];
+                            movieInLibrary[movie.id] = !movieInLibrary[movie.id]!;
                           });
                         },
                       ),
                       IconButton(
                         icon: Icon(
-                          movie.isFavorite
+                          isFavorite
                               ? Icons.favorite
                               : Icons.favorite_border,
-                          color: movie.isFavorite ? Colors.red : Colors.grey,
+                          color: isFavorite ? Colors.red : Colors.grey,
                         ),
-                        onPressed: () => context
-                            .read<MovieViewModel>()
-                            .toggleFavorite(movie.id),
+                        onPressed: () {
+                          context.read<MovieViewModel>()
+                            .toggleFavorite(movie.id);
+
+                          setState(() {
+                            movieIsFavorite[movie.id] = !movieIsFavorite[movie.id]!;
+                          });
+                        },
                       ),
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
@@ -86,7 +104,7 @@ class _MovieListPageState extends State<MovieListPage> {
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
                           context
-                              .read<LibraryMovieRepositoryMemory>()
+                              .read<LibraryMovieRepository>()
                               .removeMovieFromLibrary(movie.id);
                           context.read<MovieViewModel>().removeMovie(movie.id);
                         },
@@ -126,7 +144,7 @@ class _AddMoviePageState extends State<AddMoviePage> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.movie?.name ?? '');
+    _nameController = TextEditingController(text: widget.movie?.title ?? '');
     _genreController = TextEditingController(text: widget.movie?.genre ?? '');
     _yearController = TextEditingController(text: widget.movie?.year ?? '');
   }
@@ -141,7 +159,7 @@ class _AddMoviePageState extends State<AddMoviePage> {
     }
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       if (widget.movie == null) {
         context.read<MovieViewModel>().addMovie(
@@ -158,13 +176,7 @@ class _AddMoviePageState extends State<AddMoviePage> {
               _yearController.text,
               _image,
             );
-        context.read<LibraryMovieRepositoryMemory>().updateMovieInfo(
-              widget.movie!.id,
-              _nameController.text,
-              _genreController.text,
-              _yearController.text,
-              _image,
-            );
+        await context.read<LibraryMovieRepository>().loadMovies();
       }
       Navigator.pop(context);
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projeto_flutter/ui/view/account_view.dart';
 import 'package:projeto_flutter/ui/view/libraries_view.dart';
 import 'package:projeto_flutter/ui/view/main_view.dart';
 import 'package:projeto_flutter/ui/widgets/bottom_nav_bar_widget.dart';
@@ -16,6 +17,7 @@ class _HomeViewState extends State<HomeView> {
   final List<Widget> _pages = [
     const LibrariesView(),
     const MainView(),
+    const AccountView(),
   ];
 
   @override

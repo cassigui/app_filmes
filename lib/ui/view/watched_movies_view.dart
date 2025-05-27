@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:projeto_flutter/ui/viewmodels/library_movie_view_model.dart';
+import 'package:projeto_flutter/data/repositories/library_movie_repository.dart';
 import 'package:provider/provider.dart';
 
 class WatchedMoviesListView extends StatelessWidget {
@@ -7,7 +7,7 @@ class WatchedMoviesListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final movies = context.watch<LibraryMovieRepositoryMemory>().watchedMovies;
+    final movies = context.watch<LibraryMovieRepository>().watchedMovies;
 
     return Scaffold(
       body: movies.isEmpty
@@ -22,7 +22,7 @@ class WatchedMoviesListView extends StatelessWidget {
                       ? Image.file(movie.image!,
                           width: 50, height: 50, fit: BoxFit.cover)
                       : const Icon(Icons.movie),
-                  title: Text(movie.name),
+                  title: Text(movie.title),
                   subtitle: Text('${movie.genre} - ${movie.year}'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -32,14 +32,14 @@ class WatchedMoviesListView extends StatelessWidget {
                           Icons.watch_later,
                         ),
                         onPressed: () => context
-                            .read<LibraryMovieRepositoryMemory>()
+                            .read<LibraryMovieRepository>()
                             .toggleLibraryMovieWatchStatus(movie.id),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
                           context
-                              .read<LibraryMovieRepositoryMemory>()
+                              .read<LibraryMovieRepository>()
                               .removeMovieFromLibrary(libraryMovie.movie.id);
                         },
                       ),
