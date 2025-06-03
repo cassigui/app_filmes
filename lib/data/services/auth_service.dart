@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:local_auth/local_auth.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final LocalAuthentication _localAuth = LocalAuthentication();
   User? user;
   bool isLoading = true;
 
@@ -23,6 +25,20 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> authenticateWithBiometrics() async {
+    try {
+      final bool canAuthenticate = await _localAuth.canCheckBiometrics;
+      if (!canAuthenticate) return false;
+
+      return await _localAuth.authenticate(
+        localizedReason: 'Por favor, autentique-se para acessar o app',
+        options: const AuthenticationOptions(biometricOnly: true),
+      );
+    } catch (e) {
+      return false;
+    }
+  }
+
   login(String email, String password) async {
     try {
       await _auth.signInWithEmailAndPassword(
@@ -38,7 +54,8 @@ class AuthService extends ChangeNotifier {
       } else if (e.code == 'invalid-email') {
         throw AuthException('Email inválido');
       } else if (e.code == 'invalid-credential') {
-        throw AuthException('Credenciais inválidas. Verifique o e-mail e a senha.');
+        throw AuthException(
+            'Credenciais inválidas. Verifique o e-mail e a senha.');
       } else {
         throw AuthException(e.message ?? 'Erro desconhecido');
       }
