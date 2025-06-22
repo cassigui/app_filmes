@@ -1,12 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:projeto_flutter/data/database/db.dart';
+import 'package:projeto_flutter/constants.dart';
 import 'package:projeto_flutter/data/services/auth_service.dart';
 import 'package:projeto_flutter/domain/models/library_movie.dart';
 import 'package:projeto_flutter/domain/models/movie.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:projeto_flutter/domain/models/user_api.dart';
+
+import 'package:http/http.dart' as http;
 
 class LibraryMovieRepository extends ChangeNotifier{
-  late Database db;
   late AuthService auth;
   List<LibraryMovie> _watchedMovies = [];
   List<LibraryMovie> _watchlistMovies = [];
@@ -15,108 +18,188 @@ class LibraryMovieRepository extends ChangeNotifier{
   List<LibraryMovie> get watchlistMovies => _watchlistMovies;
 
   LibraryMovieRepository({required this.auth}) {
-    _initRepository();
+    _getMovies();
   }
 
-  _initRepository() async {
-    await _getWatchedMovies();
-    await _getWatchlistMovies();
-  }
-
-  _getWatchedMovies() async {
+  _addToWatchedMovieList(watchedMovies) {
     _watchedMovies = [];
-    db = await DB.instance.database;
-    final result = await db.rawQuery('''
-      SELECT m.* FROM movies m
-      INNER JOIN library_movies l ON m.id = l.movie_id
-      WHERE l.user_id = ? AND l.isWatched = 1
-    ''', [auth.user!.uid]);
 
-    _watchedMovies = result.map((map) => LibraryMovie(movie: Movie.fromMap(map), isWatched: true)).toList();
+    for (var movie in watchedMovies) {
+      _watchedMovies.add(LibraryMovie(movie: movie, isWatched: true));
+    }
+
     notifyListeners();
   }
 
-  _getWatchlistMovies() async {
+  _addToWatchList(unwatchedMovies) {
     _watchlistMovies = [];
-    db = await DB.instance.database;
-    final result = await db.rawQuery('''
-      SELECT m.* FROM movies m
-      INNER JOIN library_movies l ON m.id = l.movie_id
-      WHERE l.user_id = ? AND l.isWatched = 0
-    ''', [auth.user!.uid]);
-    _watchlistMovies = result.map((map) => LibraryMovie(movie: Movie.fromMap(map), isWatched: false)).toList();
+
+    for (var movie in unwatchedMovies) {
+      _watchlistMovies.add(LibraryMovie(movie: movie, isWatched: false));
+    }
+
     notifyListeners();
+  }
+
+  _getMovies() async {
+    final userFromApi = await _getUserFromApi();
+    if (userFromApi == null) return;
+    String url = '$baseApi/users/${userFromApi.id}';
+
+    final resp = await http.get(Uri.parse(url));
+
+    if (resp.statusCode != 200) return;
+
+    final response = resp.body;
+    final parsedResponse = jsonDecode(response);
+    final List<String> watchedMoviesIds = List<String>.from(jsonDecode(parsedResponse['watchedMoviesIds']));
+    final List<String> toWatchMovieIds = List<String>.from(jsonDecode(parsedResponse['toWatchMoviesIds']));
+    var movieIds = [watchedMoviesIds, toWatchMovieIds].expand((x) => x).toList();
+    Set<String> uniqueMovieIds = Set<String>.from(movieIds);
+
+    final List<Future<http.Response>> futureMovies = [];
+    for (var movieId in uniqueMovieIds) {
+      String movieUrl = '$baseApi/movie/$movieId';
+      futureMovies.add(http.get(Uri.parse(movieUrl)));
+    }
+    final List<http.Response> results = await Future.wait(futureMovies);
+
+    final List<Movie> watchedMovies = [];
+    final List<Movie> watchListMovies = [];
+    for (var i = 0; i < results.length; i++) {
+      final movieResp = results[i];
+      if (movieResp.statusCode == 200) {
+        final movieResponse = movieResp.body;
+        final movieMap = jsonDecode(movieResponse);
+        final movie = Movie.fromMap(movieMap);
+        if (watchedMoviesIds.contains(movie.id)) {
+          watchedMovies.add(movie);
+        } else {
+          watchListMovies.add(movie);
+        }
+      }
+    }
+
+    _addToWatchedMovieList(watchedMovies);
+    _addToWatchList(watchListMovies);
   }
 
   Future<void> ensureLoaded() async {
     if (_watchedMovies.isEmpty && _watchlistMovies.isEmpty) {
-      await _initRepository();
+      await _getMovies();
     }
   }
 
   Future<void> loadMovies() async {
-    await _initRepository();
+    await _getMovies();
   }
 
   Future<bool> checkMovieIsInLibrary(String movieId) async {
-    db = await DB.instance.database;
-    final result = await db.query(
-      'library_movies',
-      where: 'user_id = ? AND movie_id = ?',
-      whereArgs: [auth.user!.uid, movieId],
-      limit: 1,
-    );
-
-    return result.isNotEmpty;
+    List<String> movieIds = [_watchlistMovies, _watchedMovies].expand((x) => x).map((lb) => lb.movie.id).toList();
+    return movieIds.contains(movieId);
   }
 
   Future<void> addMovieToLibrary(Movie movie) async {
-    db = await DB.instance.database;
-    await db.insert(
-      'library_movies',
-      {
-        'user_id': auth.user!.uid,
-        'movie_id': movie.id,
-        'isWatched': 0,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    final userFromApi = await _getUserFromApi();
+    if (userFromApi == null) return;
 
-    await _initRepository();
+    final List<String> toWatchMoviesIds = userFromApi.toWatchMoviesIds;
+    toWatchMoviesIds.add(movie.id);
+
+    final url = '$baseApi/users/${userFromApi.id}';
+    final response = await http.put(Uri.parse(url), body: {
+      'uid': userFromApi.uid,
+      'cpf': userFromApi.cpf,
+      'birthdate': userFromApi.birthDate?.toIso8601String() ?? '',
+      'favoriteMoviesIds': jsonEncode(userFromApi.favoriteMoviesIds),
+      'watchedMoviesIds': jsonEncode(userFromApi.watchedMoviesIds),
+      'toWatchMoviesIds': jsonEncode(toWatchMoviesIds)
+    });
+
+    if (response.statusCode == 200) {
+      await _getMovies();
+    }
   }
 
   Future<void> toggleLibraryMovieWatchStatus(String movieId) async {
-    db = await DB.instance.database;
+    List<String> movieIdsInLibrary = [_watchedMovies, _watchlistMovies].expand((x) => x).map((lb) => lb.movie.id).toList();
 
-    final result = await db.query(
-      'library_movies',
-      columns: ['isWatched'],
-      where: 'user_id = ? AND movie_id = ?',
-      whereArgs: [auth.user!.uid, movieId],
-      limit: 1,
-    );
+    if (!movieIdsInLibrary.contains(movieId)) return;
 
-    if (result.isNotEmpty) {
-      final currentStatus = result.first['isWatched'] as int;
-      final newStatus = currentStatus == 1 ? 0 : 1;
+    final userFromApi = await _getUserFromApi();
+    if (userFromApi == null) return;
 
-      await db.update(
-        'library_movies',
-        {'isWatched': newStatus},
-        where: 'user_id = ? AND movie_id = ?',
-        whereArgs: [auth.user!.uid, movieId],
-      );
-      await _initRepository();
+    List<String> watchedMoviesIds = userFromApi.watchedMoviesIds;
+    List<String> toWatchMoviesIds = userFromApi.toWatchMoviesIds;
+    if (watchedMoviesIds.contains(movieId)) {
+      watchedMoviesIds.remove(movieId);
+      toWatchMoviesIds.add(movieId);
+    } else {
+      toWatchMoviesIds.remove(movieId);
+      watchedMoviesIds.add(movieId);
+    }
+
+    final url = Uri.parse('$baseApi/users/${userFromApi.id}');
+    final response = await http.put(url, body: {
+      'uid': userFromApi.uid,
+      'cpf': userFromApi.cpf,
+      'birthdate': userFromApi.birthDate?.toIso8601String() ?? '',
+      'favoriteMoviesIds': jsonEncode(userFromApi.favoriteMoviesIds),
+      'watchedMoviesIds': jsonEncode(watchedMoviesIds),
+      'toWatchMoviesIds': jsonEncode(toWatchMoviesIds),
+    });
+
+    if (response.statusCode == 200) {
+      await _getMovies();
     }
   }
 
   Future<void> removeMovieFromLibrary(String movieId) async {
-    db = await DB.instance.database;
-    await db.delete(
-      'library_movies',
-      where: 'user_id = ? AND movie_id = ?',
-      whereArgs: [auth.user!.uid, movieId],
-    );
-    await _initRepository();
+    List<String> movieIdsInLibrary = [_watchedMovies, _watchlistMovies].expand((x) => x).map((lb) => lb.movie.id).toList();
+
+    if (!movieIdsInLibrary.contains(movieId)) return;
+
+    final userFromApi = await _getUserFromApi();
+    if (userFromApi == null) return;
+
+    List<String> watchedMoviesIds = userFromApi.watchedMoviesIds;
+    List<String> toWatchMoviesIds = userFromApi.toWatchMoviesIds;
+    watchedMoviesIds.remove(movieId);
+    toWatchMoviesIds.remove(movieId);
+
+    final url = Uri.parse('$baseApi/users/${userFromApi.id}');
+    final response = await http.put(url, body: {
+      'uid': userFromApi.uid,
+      'cpf': userFromApi.cpf,
+      'birthdate': userFromApi.birthDate?.toIso8601String() ?? '',
+      'favoriteMoviesIds': jsonEncode(userFromApi.favoriteMoviesIds),
+      'watchedMoviesIds': jsonEncode(watchedMoviesIds),
+      'toWatchMoviesIds': jsonEncode(toWatchMoviesIds),
+    });
+
+    if (response.statusCode == 200) {
+      await _getMovies();
+    }
+  }
+
+  Future<UserApi?> _getUserFromApi() async {
+    final user = auth.user;
+    if (user == null) return null;
+
+    String url = '$baseApi/users' ;
+
+    final resp = await http.get(Uri.parse(url));
+    if (resp.statusCode != 200) return null;
+    final userList = jsonDecode(resp.body) as List;
+    UserApi? userFromApi;
+    for (var userItem in userList) {
+      if (userItem['uid'] == user.uid) {
+        userFromApi = UserApi.fromJson(userItem);
+        break;
+      }
+      userFromApi = null;
+    }
+
+    return userFromApi;
   }
 }

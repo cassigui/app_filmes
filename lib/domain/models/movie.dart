@@ -23,7 +23,6 @@ class Movie {
       'titulo': title,
       'genero': genre,
       'ano': year,
-      'favorito': isFavorite ? 1 : 0,
     };
   }
 
@@ -33,7 +32,6 @@ class Movie {
       title: map['title'] ?? '',
       genre: map['genre'] ?? '',
       year: map['year'] ?? '',
-      isFavorite: map['isFavorite'] == 1,
     );
   }
 }
