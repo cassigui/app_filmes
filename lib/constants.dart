@@ -1,0 +1,1 @@
+const baseApi = 'https://6858015521f5d3463e56cc4b.mockapi.io/api/v1';

@@ -25,6 +25,7 @@ class _MovieListPageState extends State<MovieListPage> {
       movieInLibrary[movie.id] = isWatched;
       movieIsFavorite[movie.id] = isFavorite;
     }
+    if (!mounted) return;
 
     setState(() {
       
