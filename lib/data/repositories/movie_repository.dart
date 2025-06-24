@@ -1,54 +1,70 @@
-import 'package:projeto_flutter/data/database/db.dart';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+import 'package:projeto_flutter/constants.dart';
 import 'package:projeto_flutter/domain/models/movie.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:projeto_flutter/domain/models/user_api.dart';
 
 class MovieRepository {
-  late Database db;
-
   Future<List<Movie>> getAllMovies() async {
-    db = await DB.instance.database;
-    final maps = await db.query('movies');
-    return maps.map((map) => Movie.fromMap(map)).toList();
+    String url = '$baseApi/movie' ;
+
+    final resp = await http.get(Uri.parse(url));
+    if (resp.statusCode != 200) return List.empty();
+
+    final response = jsonDecode(resp.body) as List;
+    return response.map((map) => Movie.fromMap(map)).toList();
   }
 
   Future<List<Movie>> getFavoriteMovies(String userId) async {
-    db = await DB.instance.database;
+    final userFromApi = await _getUserFromApi(userId);
+    if (userFromApi == null) return List.empty();
 
-    final result = await db.rawQuery('''
-      SELECT m.* FROM movies m
-      INNER JOIN favorite_movies f ON m.id = f.movie_id
-      WHERE f.user_id = ?
-    ''', [userId]);
+    List<String> favoriteMoviesIds = userFromApi.favoriteMoviesIds;
 
-  return result.map((map) => Movie.fromMap(map)).toList();
+    final List<Future<http.Response>> futureMovies = [];
+    for (var movieId in favoriteMoviesIds) {
+      String movieUrl = '$baseApi/movie/$movieId';
+      futureMovies.add(http.get(Uri.parse(movieUrl)));
+    }
+    final List<http.Response> results = await Future.wait(futureMovies);
+
+    List<Movie> favoriteMovies = [];
+    for (var i = 0; i < results.length; i++) {
+      final movieResp = results[i];
+      if (movieResp.statusCode == 200) {
+        final movieResponse = movieResp.body;
+        final movieMap = jsonDecode(movieResponse);
+        final movie = Movie.fromMap(movieMap);
+        favoriteMovies.add(movie);
+      }
+    }
+
+    return favoriteMovies;
   }
 
   Future<Map<String, dynamic>?> getMovieById(String id) async {
-    db = await DB.instance.database;
-    final List<Map<String, dynamic>> maps =
-        await db.query('movies', where: 'id = ?', whereArgs: [id]);
-    if (maps.isNotEmpty) {
-      return maps.first;
-    }
-    return null;
+    String url = '$baseApi/movie/$id' ;
+
+    final resp = await http.get(Uri.parse(url));
+    if (resp.statusCode != 200) return null;
+
+    return jsonDecode(resp.body);
   }
 
   Future<bool> checkMovieIsFavorite(String id, String userId) async {
-    db = await DB.instance.database;
-    final result = await db.query(
-      'favorite_movies',
-      where: 'user_id = ? AND movie_id = ?',
-      whereArgs: [userId, id],
-      limit: 1,
-    );
+    final userFromApi = await _getUserFromApi(userId);
+    if (userFromApi == null) return false;
 
-    return result.isNotEmpty;
+    List<String> favoriteMoviesIds = userFromApi.favoriteMoviesIds;
+
+    return favoriteMoviesIds.contains(id);
   }
 
   Future<void> insertMovie(Movie movie) async {
-    db = await DB.instance.database;
-    await db.insert('movies', {
-      'id': movie.id,
+    String url = '$baseApi/movie' ;
+
+    await http.post(Uri.parse(url), body: {
       'title': movie.title,
       'genre': movie.genre,
       'year': movie.year,
@@ -56,47 +72,70 @@ class MovieRepository {
   }
 
   Future<void> deleteMovie(String id) async {
-    db = await DB.instance.database;
-    await db.delete('movies', where: 'id = ?', whereArgs: [id]);
+    String url = '$baseApi/movie/$id';
+
+    await http.delete(Uri.parse(url));
   }
 
   Future<void> updateFavorite(String id, String userId) async {
-    db = await DB.instance.database;
-    
-    final result = await db.query(
-      'favorite_movies',
-      where: 'user_id = ? AND movie_id = ?',
-      whereArgs: [userId, id],
-    );
+    final userFromApi = await _getUserFromApi(userId);
+    if (userFromApi == null) return;
 
-    if (result.isNotEmpty) {
-      await db.delete(
-        'favorite_movies',
-        where: 'user_id = ? AND movie_id = ?',
-        whereArgs: [userId, id],
-      );
+    List<String> favoriteMoviesIds = userFromApi.favoriteMoviesIds;
+
+    if (favoriteMoviesIds.contains(id)) {
+      favoriteMoviesIds.remove(id);
+
+      final url = Uri.parse('$baseApi/users/${userFromApi.id}');
+      await http.put(url, body: {
+        'uid': userFromApi.uid,
+        'cpf': userFromApi.cpf,
+        'birthdate': userFromApi.birthDate?.toIso8601String() ?? '',
+        'favoriteMoviesIds': jsonEncode(favoriteMoviesIds),
+        'watchedMoviesIds': jsonEncode(userFromApi.watchedMoviesIds),
+        'toWatchMoviesIds': jsonEncode(userFromApi.toWatchMoviesIds),
+      });
     } else {
-      await db.insert(
-        'favorite_movies',
-        {
-          'user_id': userId,
-          'movie_id': id,
-        },
-      );
+      favoriteMoviesIds.add(id);
+
+      final url = Uri.parse('$baseApi/users/${userFromApi.id}');
+      await http.put(url, body: {
+        'uid': userFromApi.uid,
+        'cpf': userFromApi.cpf,
+        'birthdate': userFromApi.birthDate?.toIso8601String() ?? '',
+        'favoriteMoviesIds': jsonEncode(favoriteMoviesIds),
+        'watchedMoviesIds': jsonEncode(userFromApi.watchedMoviesIds),
+        'toWatchMoviesIds': jsonEncode(userFromApi.toWatchMoviesIds),
+      });
     }
   }
 
   Future<void> updateMovie(
       String id, String title, String genre, String year) async {
-    db = await DB.instance.database;
-    await db.update(
-        'movies',
-        {
-          'title': title,
-          'genre': genre,
-          'year': year,
-        },
-        where: 'id = ?',
-        whereArgs: [id]);
+
+    final url = Uri.parse('$baseApi/movie/$id');
+    await http.put(url, body: {
+      'title': title,
+      'genre': genre,
+      'year': year,
+    });
+  }
+
+  Future<UserApi?> _getUserFromApi(String userId) async {
+    String url = '$baseApi/users' ;
+
+    final resp = await http.get(Uri.parse(url));
+    if (resp.statusCode != 200) return null;
+    final userList = jsonDecode(resp.body) as List;
+    UserApi? userFromApi;
+    for (var userItem in userList) {
+      if (userItem['uid'] == userId) {
+        userFromApi = UserApi.fromJson(userItem);
+        break;
+      }
+      userFromApi = null;
+    }
+
+    return userFromApi;
   }
 }
