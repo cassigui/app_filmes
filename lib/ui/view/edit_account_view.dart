@@ -76,7 +76,7 @@ class _EditAccountViewState extends State<EditAccountView> {
 
       await userRepo.saveUserProfile(profile);
 
-      await context.read<AuthService>().getUser();
+      await context.read<AuthService>().user;
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +149,8 @@ class _EditAccountViewState extends State<EditAccountView> {
                 ),
                 readOnly: true,
                 onTap: _selectDate,
-                validator: (value) => value!.isEmpty ? 'Informe a data de nascimento' : null,
+                validator: (value) =>
+                    value!.isEmpty ? 'Informe a data de nascimento' : null,
               ),
               const Spacer(),
               _isLoading

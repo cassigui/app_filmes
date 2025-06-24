@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:projeto_flutter/data/services/auth_service.dart';
 import 'package:provider/provider.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter/services.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({Key? key}) : super(key: key);
@@ -10,9 +12,13 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  final GlobalKey formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  final LocalAuthentication auth = LocalAuthentication();
+  bool _canCheckBiometrics = false;
+  bool _isAuthenticatingBiometrics = false;
 
   bool isLogin = true;
   late String title;
@@ -23,6 +29,7 @@ class _LoginViewState extends State<LoginView> {
   void initState() {
     super.initState();
     setFormAction(true);
+    _checkBiometrics();
   }
 
   setFormAction(bool action) {
@@ -38,6 +45,68 @@ class _LoginViewState extends State<LoginView> {
         toggleButton = 'Já tem conta? Entrar';
       }
     });
+  }
+
+  Future<void> _checkBiometrics() async {
+    late bool canCheckBiometrics;
+    try {
+      canCheckBiometrics = await auth.canCheckBiometrics;
+    } on PlatformException catch (e) {
+      canCheckBiometrics = false;
+      print('Erro ao verificar biometria: $e');
+    }
+    if (!mounted) return;
+
+    setState(() {
+      _canCheckBiometrics = canCheckBiometrics;
+    });
+  }
+
+  Future<void> _authenticateWithBiometrics() async {
+    bool authenticated = false;
+    setState(() {
+      _isAuthenticatingBiometrics = true;
+    });
+
+    try {
+      authenticated = await auth.authenticate(
+        localizedReason: 'Use sua digital para entrar no aplicativo',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: true,
+        ),
+      );
+    } on PlatformException catch (e) {
+      print('Erro de autenticação biométrica: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Falha na autenticação biométrica: ${e.message}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isAuthenticatingBiometrics = false;
+      });
+    }
+
+    if (!mounted) return;
+
+    if (authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Autenticação biométrica bem-sucedida!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Autenticação biométrica falhou ou foi cancelada.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   login() async {
@@ -77,7 +146,7 @@ class _LoginViewState extends State<LoginView> {
     return Scaffold(
       body: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.only(top: 100),
+          padding: const EdgeInsets.only(top: 100),
           child: Form(
             key: formKey,
             child: Column(
@@ -129,16 +198,18 @@ class _LoginViewState extends State<LoginView> {
                 Padding(
                   padding: const EdgeInsets.all(24),
                   child: ElevatedButton(
-                    onPressed: () {
-                      if ((formKey.currentState as FormState).validate()) {
-                        Provider.of<AuthService>(context, listen: false);
-                        if (isLogin) {
-                          login();
-                        } else {
-                          register();
-                        }
-                      }
-                    },
+                    onPressed: _isAuthenticatingBiometrics
+                        ? null
+                        : () {
+                            if ((formKey.currentState as FormState)
+                                .validate()) {
+                              if (isLogin) {
+                                login();
+                              } else {
+                                register();
+                              }
+                            }
+                          },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -158,9 +229,11 @@ class _LoginViewState extends State<LoginView> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    setFormAction(!isLogin);
-                  },
+                  onPressed: _isAuthenticatingBiometrics
+                      ? null
+                      : () {
+                          setFormAction(!isLogin);
+                        },
                   child: Text(
                     toggleButton,
                     style: const TextStyle(
@@ -170,6 +243,34 @@ class _LoginViewState extends State<LoginView> {
                     ),
                   ),
                 ),
+                if (_canCheckBiometrics &&
+                    isLogin &&
+                    !_isAuthenticatingBiometrics)
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const Divider(),
+                        const SizedBox(height: 20),
+                        ElevatedButton.icon(
+                          onPressed: _authenticateWithBiometrics,
+                          icon: const Icon(Icons.fingerprint),
+                          label: const Text(
+                            'Entrar com Digital',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(50),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (_isAuthenticatingBiometrics)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(),
+                  ),
               ],
             ),
           ),
